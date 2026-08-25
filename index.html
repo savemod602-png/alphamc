@@ -579,7 +579,7 @@
 </div>
 
 <script>
-(async function(){
+(function(){
   "use strict";
 
   /* ===================== CONSTANTS & SUPABASE INIT ===================== */
@@ -590,7 +590,11 @@
 
   const SUPABASE_URL = "https://pnldxbsealhofwnbrgxx.supabase.co";
   const SUPABASE_KEY = "sb_publishable_tF6NlOB7OL-ykGDKc4xwjw_WLP_bQcM";
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  
+  let supabaseClient = null;
+  if (typeof supabase !== 'undefined' && supabase.createClient) {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
 
   /* ===================== DEFAULT DATA ===================== */
   const DEFAULT_CATEGORIES = ["RANKS","KITS","SPECIAL ITEMS","OTHER"];
@@ -616,11 +620,11 @@
   ];
 
   /* ===================== STATE VARIABLES ===================== */
-  let categories = DEFAULT_CATEGORIES;
-  let products = DEFAULT_PRODUCTS;
-  let tiers = DEFAULT_TIERS;
+  let categories = [...DEFAULT_CATEGORIES];
+  let products = [...DEFAULT_PRODUCTS];
+  let tiers = {...DEFAULT_TIERS};
   let goal = DEFAULT_GOAL;
-  let purchases = DEFAULT_PURCHASES;
+  let purchases = [...DEFAULT_PURCHASES];
   let cart = [];
   let isAdmin = sessionStorage.getItem("alphamc_admin_session") === "true";
   let activeCategory = categories[0] || "";
@@ -628,22 +632,23 @@
 
   /* ===================== SUPABASE SYNC ===================== */
   async function loadDataFromSupabase() {
+    if (!supabaseClient) return;
     try {
-      const { data, error } = await supabase.from('site_settings').select('*');
+      const { data, error } = await supabaseClient.from('site_settings').select('*');
       if (error) {
         console.error("Error fetching data from Supabase:", error);
         return;
       }
       if (data && data.length > 0) {
         data.forEach(item => {
-          if (item.key === 'categories') categories = item.value;
-          if (item.key === 'products') products = item.value;
-          if (item.key === 'tiers') tiers = item.value;
-          if (item.key === 'goal') goal = item.value;
-          if (item.key === 'purchases') purchases = item.value;
+          if (item.key === 'categories' && Array.isArray(item.value)) categories = item.value;
+          if (item.key === 'products' && Array.isArray(item.value)) products = item.value;
+          if (item.key === 'tiers' && typeof item.value === 'object') tiers = item.value;
+          if (item.key === 'goal' && item.value !== undefined) goal = item.value;
+          if (item.key === 'purchases' && Array.isArray(item.value)) purchases = item.value;
         });
+        renderAll();
       } else {
-        // إذا كان الجدول فارغاً نقوم بتهييئته بالبيانات الافتراضية
         await saveToSupabase('categories', categories);
         await saveToSupabase('products', products);
         await saveToSupabase('tiers', tiers);
@@ -656,66 +661,67 @@
   }
 
   async function saveToSupabase(key, value) {
+    if (!supabaseClient) return;
     try {
-      const { error } = await supabase
-        .from('site_settings')
-        .upsert({ key: key, value: value }, { onConflict: 'key' });
-      if (error) console.error(`Error saving ${key} to Supabase:`, error);
+      await supabaseClient.from('site_settings').upsert({ key: key, value: value }, { onConflict: 'key' });
     } catch(e) {
       console.error("Supabase save error:", e);
     }
   }
 
-  // التحديث اللحظي (Realtime) لجميع الأجهزة المفتوحة
-  supabase
-    .channel('public:site_settings')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, async () => {
-      await loadDataFromSupabase();
-      renderProducts();
-      renderTiers();
-      renderGoal();
-      renderPurchases();
-    })
-    .subscribe();
+  if (supabaseClient) {
+    try {
+      supabaseClient
+        .channel('public:site_settings')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, async () => {
+          await loadDataFromSupabase();
+        })
+        .subscribe();
+    } catch(e) {
+      console.error("Realtime subscription error:", e);
+    }
+  }
 
   /* ===================== SNOW ANIMATION ===================== */
   const canvas = document.getElementById('snowCanvas');
-  const ctx = canvas.getContext('2d');
-  let flakes = [];
-  function resizeCanvas(){
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    let flakes = [];
+    function resizeCanvas(){
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    function initFlakes(){
+      const count = Math.floor((window.innerWidth * window.innerHeight) / 9000);
+      flakes = Array.from({length: count}, () => ({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        r: Math.random()*3 + 1,
+        speedY: Math.random()*1 + 0.4,
+        speedX: Math.random()*0.6 - 0.3,
+        opacity: Math.random()*0.6 + 0.4
+      }));
+    }
+    function drawFlakes(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = "#ffffff";
+      flakes.forEach(f=>{
+        ctx.globalAlpha = f.opacity;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
+        ctx.fill();
+        f.y += f.speedY;
+        f.x += f.speedX;
+        if(f.y > canvas.height){ f.y = -5; f.x = Math.random()*canvas.width; }
+        if(f.x > canvas.width){ f.x = 0; }
+        if(f.x < 0){ f.x = canvas.width; }
+      });
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(drawFlakes);
+    }
+    window.addEventListener('resize', ()=>{ resizeCanvas(); initFlakes(); });
+    resizeCanvas(); initFlakes(); drawFlakes();
   }
-  function initFlakes(){
-    const count = Math.floor((window.innerWidth * window.innerHeight) / 9000);
-    flakes = Array.from({length: count}, () => ({
-      x: Math.random()*canvas.width,
-      y: Math.random()*canvas.height,
-      r: Math.random()*3 + 1,
-      speedY: Math.random()*1 + 0.4,
-      speedX: Math.random()*0.6 - 0.3,
-      opacity: Math.random()*0.6 + 0.4
-    }));
-  }
-  function drawFlakes(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle = "#ffffff";
-    flakes.forEach(f=>{
-      ctx.globalAlpha = f.opacity;
-      ctx.beginPath();
-      ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
-      ctx.fill();
-      f.y += f.speedY;
-      f.x += f.speedX;
-      if(f.y > canvas.height){ f.y = -5; f.x = Math.random()*canvas.width; }
-      if(f.x > canvas.width){ f.x = 0; }
-      if(f.x < 0){ f.x = canvas.width; }
-    });
-    ctx.globalAlpha = 1;
-    requestAnimationFrame(drawFlakes);
-  }
-  window.addEventListener('resize', ()=>{ resizeCanvas(); initFlakes(); });
-  resizeCanvas(); initFlakes(); drawFlakes();
 
   /* ===================== SCROLL FADE-UP ===================== */
   const observer = new IntersectionObserver((entries)=>{
@@ -726,6 +732,7 @@
       }
     });
   }, { threshold: 0.12 });
+
   function observeFadeUps(){
     document.querySelectorAll('.fade-up:not(.visible)').forEach(el=> observer.observe(el));
   }
@@ -748,16 +755,16 @@
 
   function refreshAdminUI(){
     if(isAdmin){
-      adminNavBtn.style.display = "none";
-      adminPanelBtn.style.display = "inline-block";
-      logoutBtn.style.display = "inline-block";
+      if(adminNavBtn) adminNavBtn.style.display = "none";
+      if(adminPanelBtn) adminPanelBtn.style.display = "inline-block";
+      if(logoutBtn) logoutBtn.style.display = "inline-block";
       document.getElementById('adminGoalEdit').style.display = "block";
       document.getElementById('adminPurchaseEdit').style.display = "block";
     } else {
-      adminNavBtn.style.display = "inline-block";
-      adminPanelBtn.style.display = "none";
-      logoutBtn.style.display = "none";
-      adminPanel.classList.remove('open');
+      if(adminNavBtn) adminNavBtn.style.display = "inline-block";
+      if(adminPanelBtn) adminPanelBtn.style.display = "none";
+      if(logoutBtn) logoutBtn.style.display = "none";
+      if(adminPanel) adminPanel.classList.remove('open');
       document.getElementById('adminGoalEdit').style.display = "none";
       document.getElementById('adminPurchaseEdit').style.display = "none";
     }
@@ -765,12 +772,14 @@
     renderTiers();
   }
 
-  adminNavBtn.addEventListener('click', ()=>{
-    document.getElementById('loginEmail').value = "";
-    document.getElementById('loginPassword').value = "";
-    document.getElementById('loginError').style.display = "none";
-    openModal('loginModal');
-  });
+  if(adminNavBtn) {
+    adminNavBtn.addEventListener('click', ()=>{
+      document.getElementById('loginEmail').value = "";
+      document.getElementById('loginPassword').value = "";
+      document.getElementById('loginError').style.display = "none";
+      openModal('loginModal');
+    });
+  }
 
   document.getElementById('loginSubmitBtn').addEventListener('click', ()=>{
     const email = document.getElementById('loginEmail').value.trim();
@@ -785,19 +794,24 @@
     }
   });
 
-  logoutBtn.addEventListener('click', ()=>{
-    isAdmin = false;
-    sessionStorage.removeItem("alphamc_admin_session");
-    refreshAdminUI();
-  });
+  if(logoutBtn) {
+    logoutBtn.addEventListener('click', ()=>{
+      isAdmin = false;
+      sessionStorage.removeItem("alphamc_admin_session");
+      refreshAdminUI();
+    });
+  }
 
-  adminPanelBtn.addEventListener('click', ()=>{
-    adminPanel.classList.add('open');
-    adminPanel.scrollIntoView({ behavior:'smooth' });
-    renderCategoryManage();
-    renderProdCatSelect();
-    renderAdminProductGrid();
-  });
+  if(adminPanelBtn) {
+    adminPanelBtn.addEventListener('click', ()=>{
+      adminPanel.classList.add('open');
+      adminPanel.scrollIntoView({ behavior:'smooth' });
+      renderCategoryManage();
+      renderProdCatSelect();
+      renderAdminProductGrid();
+    });
+  }
+
   document.getElementById('closeAdminPanelBtn').addEventListener('click', ()=>{
     adminPanel.classList.remove('open');
   });
@@ -1186,18 +1200,23 @@
   });
 
   /* ===================== INIT ===================== */
+  function renderAll(){
+    refreshAdminUI();
+    renderProducts();
+    renderTiers();
+    renderGoal();
+    renderPurchases();
+    renderCartCount();
+    observeFadeUps();
+  }
+
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  // جلب البيانات أولاً من Supabase
-  await loadDataFromSupabase();
+  // عرض البيانات الافتراضية مباشرة لمنع الصفحة البيضاء
+  renderAll();
 
-  refreshAdminUI();
-  renderProducts();
-  renderTiers();
-  renderGoal();
-  renderPurchases();
-  renderCartCount();
-  observeFadeUps();
+  // محاولة الجلب من Supabase في الخلفية
+  loadDataFromSupabase();
 
 })();
 </script>
