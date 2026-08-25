@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALPHA MC — Minecraft Server</title>
+<meta name="description" content="ALPHA MC — Premium BoxPvP Minecraft Server. Shop ranks, kits & join the tiers.">
+<style>
+  :root{
+    --sky-1:#e0f7fa;
+    --sky-2:#b3e5fc;
+    --sky-3:#81d4fa;
+    --ice:#ffffff;
+    --ink:#0d3b4d;
+    --ink-soft:#3a6a7a;
+    --accent:#00b0ff;
+    --accent-2:#4fc3f7;
+    --danger:#ff5c7a;
+    --glass:rgba(255,255,255,0.55);
+    --glass-strong:rgba(255,255,255,0.75);
+    --shadow:0 10px 30px rgba(13,110,150,0.15);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-variant:small-caps;
+    background:linear-gradient(180deg,var(--sky-1) 0%, var(--sky-2) 45%, var(--sky-3) 100%);
+    color:var(--ink);
+    overflow-x:hidden;
+    min-height:100vh;
+  }
+  input, select, textarea, button{ font-variant:small-caps; }
+  #snowCanvas{
+    position:fixed;
+    top:0; left:0;
+    width:100vw; height:100vh;
+    z-index:0;
+    pointer-events:none;
+  }
+  .content{ position:relative; z-index:1; }
+
+  /* NAV */
+  nav{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 5%;
+    background:var(--glass);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    border-bottom:1px solid rgba(255,255,255,0.6);
+  }
+  .logo{
+    display:flex; align-items:center; gap:10px;
+    font-weight:800; font-size:1.4rem;
+    background:linear-gradient(90deg,#0288d1,#00e5ff);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:floaty 4s ease-in-out infinite;
+  }
+  .logo img{
+    height:40px;
+    width:auto;
+    filter:drop-shadow(0 0 8px rgba(0,180,255,0.4));
+    animation:glow 2.5s ease-in-out infinite;
+  }
+  .logo .ico{
+    font-size:1.8rem;
+    filter:drop-shadow(0 0 8px rgba(0,180,255,0.6));
+    animation:glow 2.5s ease-in-out infinite;
+  }
+  .nav-links{ display:flex; gap:22px; align-items:center; }
+  .nav-links a{
+    color:var(--ink); text-decoration:none; font-weight:600; font-size:0.95rem;
+    transition:color .25s;
+  }
+  .nav-links a:hover{ color:var(--accent); }
+  .btn{
+    border:none; cursor:pointer; font-weight:700; border-radius:999px;
+    padding:10px 22px; font-size:0.9rem;
+    transition:transform .2s, box-shadow .2s;
+  }
+  .btn:hover{ transform:translateY(-3px); }
+  .btn-primary{
+    background:linear-gradient(90deg,#00b0ff,#4fc3f7);
+    color:#fff; box-shadow:0 6px 18px rgba(0,176,255,0.4);
+  }
+  .btn-ghost{
+    background:var(--glass-strong); color:var(--ink);
+    border:1px solid rgba(0,150,220,0.3);
+  }
+  .btn-danger{ background:linear-gradient(90deg,#ff5c7a,#ff8a9b); color:#fff; }
+  .btn-small{ padding:6px 14px; font-size:0.8rem; }
+
+  /* HERO */
+  header.hero{
+    text-align:center; padding:90px 5% 60px;
+    position:relative;
+  }
+  header.hero h1{
+    font-size:clamp(2.4rem,6vw,4.2rem);
+    margin:0 0 10px;
+    background:linear-gradient(90deg,#01579b,#00b0ff,#4fc3f7);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:floaty 5s ease-in-out infinite;
+    font-weight:900;
+    letter-spacing:1px;
+  }
+  header.hero p.tagline{
+    font-size:1.15rem; color:var(--ink-soft); max-width:640px; margin:0 auto 30px;
+  }
+  .server-box{
+    display:inline-flex; gap:14px; flex-wrap:wrap; justify-content:center;
+    margin:20px 0;
+  }
+  .info-chip{
+    background:var(--glass-strong); backdrop-filter:blur(10px);
+    border:1px solid rgba(0,150,220,0.25);
+    border-radius:14px; padding:14px 22px; box-shadow:var(--shadow);
+    cursor:pointer; user-select:none; transition:transform .2s, box-shadow .2s;
+    min-width:170px;
+  }
+  .info-chip:hover{ transform:translateY(-4px); box-shadow:0 14px 34px rgba(13,110,150,0.25); }
+  .info-chip .label{ font-size:0.72rem; text-transform:uppercase; letter-spacing:1px; color:var(--ink-soft); }
+  .info-chip .value{ font-size:1.15rem; font-weight:800; color:var(--ink); }
+  .copied-msg{
+    display:inline-block; margin-left:8px; font-size:0.75rem; color:#00c853; font-weight:700;
+    opacity:0; transition:opacity .3s;
+  }
+  .copied-msg.show{ opacity:1; }
+  .hero-buttons{ margin-top:30px; display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+
+  /* SECTIONS */
+  section{ padding:60px 5%; max-width:1300px; margin:0 auto; }
+  .section-title{
+    text-align:center; font-size:clamp(1.8rem,4vw,2.6rem); font-weight:900;
+    margin-bottom:8px;
+    background:linear-gradient(90deg,#01579b,#00b0ff);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .section-sub{ text-align:center; color:var(--ink-soft); margin-bottom:40px; }
+
+  .fade-up{ opacity:0; transform:translateY(40px); transition:opacity .8s ease, transform .8s ease; }
+  .fade-up.visible{ opacity:1; transform:translateY(0); }
+
+  @keyframes floaty{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
+  @keyframes glow{ 0%,100%{filter:drop-shadow(0 0 6px rgba(0,180,255,0.5));} 50%{filter:drop-shadow(0 0 16px rgba(0,220,255,0.9));} }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0 0 rgba(0,230,118,0.55); }
+    70%{ box-shadow:0 0 0 11px rgba(0,230,118,0); }
+    100%{ box-shadow:0 0 0 0 rgba(0,230,118,0); }
+  }
+  @keyframes pulseRed{
+    0%{ box-shadow:0 0 0 0 rgba(255,92,122,0.55); }
+    70%{ box-shadow:0 0 0 11px rgba(255,92,122,0); }
+    100%{ box-shadow:0 0 0 0 rgba(255,92,122,0); }
+  }
+  @keyframes pulseBlue{
+    0%{ box-shadow:0 0 0 0 rgba(0,176,255,0.45), 0 6px 18px rgba(0,176,255,0.4); }
+    70%{ box-shadow:0 0 0 10px rgba(0,176,255,0), 0 6px 18px rgba(0,176,255,0.4); }
+    100%{ box-shadow:0 0 0 0 rgba(0,176,255,0), 0 6px 18px rgba(0,176,255,0.4); }
+  }
+  .status-dot{
+    width:10px; height:10px; border-radius:50%;
+    background:#00e676; display:inline-block; margin-right:8px;
+    animation:pulse 1.8s infinite;
+  }
+  .status-dot.offline{ background:#ff5c7a; animation:pulseRed 1.8s infinite; }
+  .btn-primary{ animation:pulseBlue 2.6s infinite; }
+
+  /* TABS */
+  .tabs{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:36px; }
+  .tab-btn{
+    padding:10px 24px; border-radius:999px; border:1px solid rgba(0,150,220,0.3);
+    background:var(--glass); cursor:pointer; font-weight:700; color:var(--ink-soft);
+    transition:all .25s;
+  }
+  .tab-btn.active, .tab-btn:hover{
+    background:linear-gradient(90deg,#00b0ff,#4fc3f7); color:#fff; box-shadow:0 6px 18px rgba(0,176,255,0.35);
+  }
+
+  .grid{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:24px;
+  }
+  .card{
+    background:var(--glass-strong); backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,0.7);
+    border-radius:var(--radius); padding:24px;
+    box-shadow:var(--shadow);
+    transition:transform .3s, box-shadow .3s;
+    display:flex; flex-direction:column; gap:12px;
+    position:relative;
+  }
+  .card:hover{ transform:translateY(-8px) scale(1.02); box-shadow:0 20px 40px rgba(13,110,150,0.28); }
+  .card h3{ margin:0; font-size:1.25rem; display:flex; align-items:center; gap:8px; }
+  .card .price{
+    font-size:1.5rem; font-weight:900;
+    background:linear-gradient(90deg,#0288d1,#00e5ff);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .card .duration{
+    display:inline-block; font-size:0.7rem; font-weight:700; color:#fff;
+    background:linear-gradient(90deg,#4fc3f7,#00b0ff); padding:3px 10px; border-radius:999px;
+    width:fit-content;
+  }
+  .card ul{ margin:0; padding-left:18px; color:var(--ink-soft); font-size:0.92rem; flex-grow:1; }
+  .card .card-actions{ display:flex; gap:8px; margin-top:6px; }
+  .admin-edit-row{ display:flex; gap:6px; position:absolute; top:14px; right:14px; }
+  .icon-btn{
+    background:rgba(255,255,255,0.8); border:1px solid rgba(0,150,220,0.3); border-radius:8px;
+    cursor:pointer; padding:4px 8px; font-size:0.85rem;
+  }
+
+  /* TIERS - عَمُودِيًّا */
+  .tier-board{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+    max-width:800px;
+    margin:0 auto;
+  }
+  .tier-card{
+    background:linear-gradient(160deg, rgba(255,255,255,0.8), rgba(179,229,252,0.5));
+    border:1px solid rgba(255,255,255,0.8);
+    border-radius:var(--radius);
+    padding:18px;
+    box-shadow:var(--shadow);
+    transition:transform .3s;
+    width:100%;
+  }
+  .tier-card:hover{ transform:scale(1.01); }
+  .tier-card h4{
+    margin:0 0 12px;
+    text-align:center;
+    font-size:1.4rem;
+    font-weight:900;
+    color:#01579b;
+    letter-spacing:2px;
+    text-shadow:0 0 12px rgba(0,180,255,0.4);
+  }
+  .tier-players{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .player-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:rgba(255,255,255,0.7);
+    border-radius:12px;
+    padding:8px 14px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);
+    transition:background .2s;
+  }
+  .player-row:hover{ background:rgba(255,255,255,0.9); }
+  .player-row img{
+    width:36px;
+    height:36px;
+    border-radius:8px;
+    image-rendering:pixelated;
+    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  }
+  .player-row span{
+    font-weight:700;
+    font-size:1.2rem;
+    color:var(--ink);
+    text-shadow:0 0 8px rgba(0,180,255,0.2);
+    flex:1;
+  }
+  .player-row button{ margin-left:auto; }
+  .tier-add-form{
+    display:flex;
+    gap:6px;
+    margin-top:12px;
+  }
+  .tier-add-form input{ flex:1; min-width:0; }
+
+  /* GOAL & PURCHASES */
+  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:30px; }
+  @media(max-width:800px){ .two-col{ grid-template-columns:1fr; } }
+  .panel{
+    background:var(--glass-strong); backdrop-filter:blur(14px); border-radius:var(--radius);
+    padding:28px; box-shadow:var(--shadow); border:1px solid rgba(255,255,255,0.7);
+  }
+  .progress-outer{
+    width:100%; height:22px; background:rgba(0,150,220,0.15); border-radius:999px; overflow:hidden;
+    margin:14px 0; position:relative;
+  }
+  .progress-inner{
+    height:100%; background:linear-gradient(90deg,#00b0ff,#4fc3f7,#80deea);
+    border-radius:999px; transition:width 1.2s ease;
+    display:flex; align-items:center; justify-content:flex-end; color:#fff; font-size:0.75rem; font-weight:800;
+    padding-right:8px;
+  }
+  .purchase-item{
+    display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px dashed rgba(0,150,220,0.25);
+    font-size:0.92rem;
+  }
+  .purchase-item:last-child{ border-bottom:none; }
+
+  /* FORMS / MODALS */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(13,59,77,0.45); backdrop-filter:blur(4px);
+    display:none; align-items:center; justify-content:center; z-index:200; padding:20px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal{
+    background:#fff; border-radius:var(--radius); padding:30px; width:100%; max-width:420px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.3); position:relative; max-height:90vh; overflow-y:auto;
+  }
+  .modal.wide{ max-width:640px; }
+  .modal h2{ margin-top:0; color:var(--ink); }
+  .modal label{ display:block; font-size:0.85rem; font-weight:700; margin:12px 0 6px; color:var(--ink-soft); }
+  .modal input, .modal select, .modal textarea{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid #cfe8f5; font-size:0.95rem;
+    font-family:inherit;
+  }
+  .modal textarea{ resize:vertical; min-height:70px; }
+  .modal .close-x{
+    position:absolute; top:14px; right:18px; cursor:pointer; font-size:1.4rem; color:var(--ink-soft);
+    background:none; border:none;
+  }
+  .modal-actions{ margin-top:20px; display:flex; gap:10px; justify-content:flex-end; }
+  .error-text{ color:var(--danger); font-size:0.85rem; margin-top:8px; display:none; }
+
+  /* ADMIN PANEL */
+  #adminPanel{ display:none; }
+  #adminPanel.open{ display:block; }
+  .admin-header{
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+    margin-bottom:20px;
+  }
+  .admin-sub-tabs{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px; }
+  .admin-block{ display:none; }
+  .admin-block.active{ display:block; }
+  .cat-manage-list{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+  .cat-chip{
+    background:var(--glass-strong); padding:8px 14px; border-radius:999px; display:flex; align-items:center; gap:8px;
+    border:1px solid rgba(0,150,220,0.3); font-weight:700;
+  }
+  .field-row{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .field-row > *{ flex:1; min-width:150px; }
+
+  footer{
+    text-align:center; padding:40px 5% 60px; color:var(--ink-soft); font-size:0.85rem;
+    position:relative; z-index:1;
+  }
+  footer a{ color:var(--accent); text-decoration:none; font-weight:700; }
+
+  ::-webkit-scrollbar{ width:10px; }
+  ::-webkit-scrollbar-thumb{ background:var(--accent-2); border-radius:10px; }
+
+  @media(max-width:700px){
+    .nav-links{ display:none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="snowCanvas"></canvas>
+
+<div class="content">
+  <nav>
+    <div class="logo">
+      <img src="alpha.png" alt="ALPHA MC">
+      <span>ALPHA MC</span>
+    </div>
+    <div class="nav-links">
+      <a href="#store">Store</a>
+      <a href="#tiers">Tiers</a>
+      <a href="#goal">Goal</a>
+      <a href="https://discord.gg/alpha-mc" target="_blank" rel="noopener">Discord</a>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-ghost btn-small" id="adminNavBtn">Admin</button>
+      <button class="btn btn-primary btn-small" id="adminPanelBtn" style="display:none;">Panel</button>
+      <button class="btn btn-ghost btn-small" id="logoutBtn" style="display:none;">Logout</button>
+      <button class="btn btn-primary btn-small" id="cartBtn">🛒 Cart (<span id="cartCount">0</span>)</button>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <h1 class="fade-up">ALPHA MC</h1>
+    <p class="tagline fade-up">Premium BoxPvP Minecraft server — climb the tiers, gear up in the store, and dominate the arena.</p>
+    <div class="server-box fade-up">
+      <div class="info-chip" id="onlineChip" title="Live player count">
+        <div class="label">Players Online</div>
+        <div class="value"><span class="status-dot" id="onlineDot"></span><span id="onlineCountValue">—</span></div>
+      </div>
+      <div class="info-chip" id="ipChip" title="Click to copy">
+        <div class="label">Server IP</div>
+        <div class="value">alpha-mc.net <span class="copied-msg" id="ipCopiedMsg">Copied!</span></div>
+      </div>
+      <div class="info-chip" id="portChip" title="Click to copy">
+        <div class="label">Port</div>
+        <div class="value">19132 <span class="copied-msg" id="portCopiedMsg">Copied!</span></div>
+      </div>
+      <div class="info-chip">
+        <div class="label">Discord</div>
+        <div class="value">alpha-mc</div>
+      </div>
+    </div>
+    <div class="hero-buttons fade-up">
+      <a href="https://discord.gg/alpha-mc" target="_blank" rel="noopener" class="btn btn-primary">💬 Join Discord</a>
+      <a href="#store" class="btn btn-ghost">🛍️ Visit Store</a>
+    </div>
+  </header>
+
+  <section id="store">
+    <h2 class="section-title fade-up">Store</h2>
+    <p class="section-sub fade-up">Grab ranks, kits, and special items to power up your gameplay.</p>
+    <div class="tabs fade-up" id="categoryTabs"></div>
+    <div class="grid fade-up" id="productGrid"></div>
+  </section>
+
+  <section id="tiers">
+    <h2 class="section-title fade-up">BOXPVP Tiers</h2>
+    <p class="section-sub fade-up">The best of the best — climb your way through the ranks.</p>
+    <div class="tier-board" id="tierBoard"></div>
+  </section>
+
+  <section id="goal">
+    <div class="two-col">
+      <div class="panel fade-up">
+        <h3 style="margin-top:0;">🎯 Monthly Goal</h3>
+        <p style="color:var(--ink-soft); font-size:0.9rem;">Help us reach this month's server goal!</p>
+        <div class="progress-outer">
+          <div class="progress-inner" id="goalProgressBar" style="width:0%;">0%</div>
+        </div>
+        <div id="adminGoalEdit" style="display:none; margin-top:14px;">
+          <label>Set Progress %</label>
+          <div class="field-row">
+            <input type="number" id="goalInput" min="0" max="100">
+            <button class="btn btn-primary btn-small" id="saveGoalBtn">Save</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel fade-up">
+        <h3 style="margin-top:0;">🛒 Recent Purchases</h3>
+        <div id="purchasesList"></div>
+        <div id="adminPurchaseEdit" style="display:none; margin-top:14px;">
+          <label>Add Purchase (e.g. "Steve bought VIP Rank")</label>
+          <div class="field-row">
+            <input type="text" id="purchaseInput" placeholder="Player bought Item">
+            <button class="btn btn-primary btn-small" id="addPurchaseBtn">Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="adminPanel">
+    <div class="panel">
+      <div class="admin-header">
+        <h2 style="margin:0;">🛠️ Admin Panel</h2>
+        <button class="btn btn-ghost btn-small" id="closeAdminPanelBtn">Close Panel</button>
+      </div>
+      <div class="admin-sub-tabs">
+        <button class="tab-btn active" data-admin-tab="categories">Categories & Products</button>
+        <button class="tab-btn" data-admin-tab="tiersAdmin">Tiers</button>
+        <button class="tab-btn" data-admin-tab="siteAdmin">Site Data</button>
+      </div>
+
+      <div class="admin-block active" id="admin-categories">
+        <h3>Categories</h3>
+        <div class="cat-manage-list" id="catManageList"></div>
+        <div class="field-row">
+          <input type="text" id="newCatName" placeholder="New category name">
+          <button class="btn btn-primary btn-small" id="addCatBtn">+ Add Category</button>
+        </div>
+        <hr style="border-color:rgba(0,150,220,0.2); margin:24px 0;">
+        <h3>Products</h3>
+        <div class="field-row">
+          <select id="prodCatSelect"></select>
+          <button class="btn btn-primary btn-small" id="openAddProductBtn">+ Add Product</button>
+        </div>
+        <div class="grid" id="adminProductGrid" style="margin-top:20px;"></div>
+      </div>
+
+      <div class="admin-block" id="admin-tiersAdmin">
+        <h3>Manage Tier Players</h3>
+        <p style="color:var(--ink-soft); font-size:0.9rem;">Use the "+" form under each tier on the main Tiers section to add players; remove them with the ✕ on each player row (visible while logged in).</p>
+      </div>
+
+      <div class="admin-block" id="admin-siteAdmin">
+        <h3>Site Data</h3>
+        <p style="color:var(--ink-soft); font-size:0.9rem;">Edit the monthly goal and recent purchases directly from the Goal section below (visible while logged in as admin).</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>© <span id="year"></span> ALPHA MC. Not affiliated with Mojang or Microsoft.</p>
+    <p><a href="https://discord.gg/alpha-mc" target="_blank" rel="noopener">discord.gg/alpha-mc</a></p>
+  </footer>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <button class="close-x" data-close="loginModal">&times;</button>
+    <h2>Admin Login</h2>
+    <label>Email</label>
+    <input type="email" id="loginEmail" placeholder="you@example.com">
+    <label>Password</label>
+    <input type="password" id="loginPassword" placeholder="••••••••">
+    <div class="error-text" id="loginError">Invalid email or password.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="loginModal">Cancel</button>
+      <button class="btn btn-primary" id="loginSubmitBtn">Login</button>
+    </div>
+  </div>
+</div>
+
+<!-- CATEGORY EDIT MODAL -->
+<div class="modal-overlay" id="catModal">
+  <div class="modal">
+    <button class="close-x" data-close="catModal">&times;</button>
+    <h2>Rename Category</h2>
+    <label>Category Name</label>
+    <input type="text" id="catEditInput">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="catModal">Cancel</button>
+      <button class="btn btn-primary" id="saveCatEditBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal wide">
+    <button class="close-x" data-close="productModal">&times;</button>
+    <h2 id="productModalTitle">Add Product</h2>
+    <label>Name (emoji/icon supported)</label>
+    <input type="text" id="prodName" placeholder="👑 VIP Rank">
+    <div class="field-row">
+      <div>
+        <label>Price</label>
+        <input type="text" id="prodPrice" placeholder="$9.99">
+      </div>
+      <div>
+        <label>Duration Tag (optional, for ranks)</label>
+        <select id="prodDuration">
+          <option value="">None</option>
+          <option value="1 Month">1 Month</option>
+          <option value="2 Months">2 Months</option>
+        </select>
+      </div>
+    </div>
+    <label>Features (one per line)</label>
+    <textarea id="prodFeatures" placeholder="Colored chat&#10;Extra homes&#10;Kit access"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="productModal">Cancel</button>
+      <button class="btn btn-primary" id="saveProductBtn">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- CART MODAL -->
+<div class="modal-overlay" id="cartModal">
+  <div class="modal">
+    <button class="close-x" data-close="cartModal">&times;</button>
+    <h2>Your Cart</h2>
+    <div id="cartItems"></div>
+    <div style="display:flex; justify-content:space-between; font-weight:800; font-size:1.1rem; margin-top:16px;">
+      <span>Total:</span>
+      <span id="cartTotal">$0.00</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="cartModal">Continue Shopping</button>
+      <button class="btn btn-primary" id="checkoutBtn">Checkout on Discord</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  "use strict";
+
+  /* ===================== CONSTANTS ===================== */
+  const DISCORD_URL = "https://discord.gg/alpha-mc";
+  const ADMIN_EMAIL = "savemod602@gmail.com";
+  const ADMIN_PASSWORD = "Dur12321";
+  // ترتيب تصاعدي من HT1 إلى LT5
+  const TIER_LIST = ["HT1","LT1","HT2","LT2","HT3","LT3","HT4","LT4","HT5","LT5"];
+
+  const LS_KEYS = {
+    session: "alphamc_admin_session",
+    categories: "alphamc_categories",
+    products: "alphamc_products",
+    tiers: "alphamc_tiers",
+    goal: "alphamc_goal",
+    purchases: "alphamc_purchases",
+    cart: "alphamc_cart"
+  };
+
+  /* ===================== DEFAULT DATA ===================== */
+  const DEFAULT_CATEGORIES = ["RANKS","KITS","SPECIAL ITEMS","OTHER"];
+
+  const DEFAULT_PRODUCTS = [
+    { id: "p1", category:"RANKS", name:"👑 VIP Rank", price:"$4.99", duration:"1 Month",
+      features:["Colored chat","/kit vip access","2 extra homes"] },
+    { id: "p2", category:"RANKS", name:"💎 MVP Rank", price:"$9.99", duration:"1 Month",
+      features:["All VIP perks","/kit mvp access","5 extra homes","Particle effects"] },
+    { id: "p3", category:"RANKS", name:"🔥 LEGEND Rank", price:"$17.99", duration:"2 Months",
+      features:["All MVP perks","/fly in hub","Custom tag","Priority queue"] },
+    { id: "p4", category:"KITS", name:"⚔️ Warrior Kit", price:"$2.99", duration:"",
+      features:["Diamond sword","Full iron armor","8x golden apples"] },
+    { id: "p5", category:"KITS", name:"🏹 Archer Kit", price:"$2.49", duration:"",
+      features:["Enchanted bow","64 arrows","Leather armor"] },
+    { id: "p6", category:"SPECIAL ITEMS", name:"🌟 Kit Key", price:"$1.99", duration:"",
+      features:["Opens 1 mystery crate","Random rare loot"] },
+    { id: "p7", category:"SPECIAL ITEMS", name:"🚀 XP Boost (7 Days)", price:"$3.99", duration:"",
+      features:["2x XP gain for 7 days"] },
+    { id: "p8", category:"OTHER", name:"🎨 Custom Nickname", price:"$1.49", duration:"",
+      features:["Set a custom colored nickname"] }
+  ];
+
+  const DEFAULT_TIERS = TIER_LIST.reduce((acc,t)=>{ acc[t]=[]; return acc; },{});
+  DEFAULT_TIERS["HT1"] = ["Technoblade"];
+  DEFAULT_TIERS["LT1"] = ["Dream"];
+
+  const DEFAULT_GOAL = 56;
+
+  const DEFAULT_PURCHASES = [
+    "Steve bought 👑 VIP Rank",
+    "Alex bought ⚔️ Warrior Kit",
+    "Notch bought 💎 MVP Rank",
+    "Herobrine bought 🌟 Kit Key"
+  ];
+
+  /* ===================== STORAGE HELPERS ===================== */
+  function loadLS(key, fallback){
+    try{
+      const raw = localStorage.getItem(key);
+      if(raw === null) return fallback;
+      return JSON.parse(raw);
+    }catch(e){ return fallback; }
+  }
+  function saveLS(key, value){
+    localStorage.setItem(key, JSON.stringify(value));
+  }
+
+  let categories = loadLS(LS_KEYS.categories, DEFAULT_CATEGORIES);
+  let products = loadLS(LS_KEYS.products, DEFAULT_PRODUCTS);
+  let tiers = loadLS(LS_KEYS.tiers, DEFAULT_TIERS);
+  let goal = loadLS(LS_KEYS.goal, DEFAULT_GOAL);
+  let purchases = loadLS(LS_KEYS.purchases, DEFAULT_PURCHASES);
+  let cart = loadLS(LS_KEYS.cart, []);
+  let isAdmin = loadLS(LS_KEYS.session, false);
+  let activeCategory = categories[0] || "";
+  let activeAdminEditProductId = null;
+
+  /* ===================== SNOW ANIMATION ===================== */
+  const canvas = document.getElementById('snowCanvas');
+  const ctx = canvas.getContext('2d');
+  let flakes = [];
+  function resizeCanvas(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  function initFlakes(){
+    const count = Math.floor((window.innerWidth * window.innerHeight) / 9000);
+    flakes = Array.from({length: count}, () => ({
+      x: Math.random()*canvas.width,
+      y: Math.random()*canvas.height,
+      r: Math.random()*3 + 1,
+      speedY: Math.random()*1 + 0.4,
+      speedX: Math.random()*0.6 - 0.3,
+      opacity: Math.random()*0.6 + 0.4
+    }));
+  }
+  function drawFlakes(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = "#ffffff";
+    flakes.forEach(f=>{
+      ctx.globalAlpha = f.opacity;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
+      ctx.fill();
+      f.y += f.speedY;
+      f.x += f.speedX;
+      if(f.y > canvas.height){ f.y = -5; f.x = Math.random()*canvas.width; }
+      if(f.x > canvas.width){ f.x = 0; }
+      if(f.x < 0){ f.x = canvas.width; }
+    });
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(drawFlakes);
+  }
+  window.addEventListener('resize', ()=>{ resizeCanvas(); initFlakes(); });
+  resizeCanvas(); initFlakes(); drawFlakes();
+
+  /* ===================== SCROLL FADE-UP ===================== */
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  function observeFadeUps(){
+    document.querySelectorAll('.fade-up:not(.visible)').forEach(el=> observer.observe(el));
+  }
+
+  /* ===================== MODALS ===================== */
+  function openModal(id){ document.getElementById(id).classList.add('open'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('[data-close]').forEach(btn=>{
+    btn.addEventListener('click', ()=> closeModal(btn.getAttribute('data-close')));
+  });
+  document.querySelectorAll('.modal-overlay').forEach(overlay=>{
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.classList.remove('open'); });
+  });
+
+  /* ===================== ADMIN AUTH ===================== */
+  const adminNavBtn = document.getElementById('adminNavBtn');
+  const adminPanelBtn = document.getElementById('adminPanelBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const adminPanel = document.getElementById('adminPanel');
+
+  function refreshAdminUI(){
+    if(isAdmin){
+      adminNavBtn.style.display = "none";
+      adminPanelBtn.style.display = "inline-block";
+      logoutBtn.style.display = "inline-block";
+      document.getElementById('adminGoalEdit').style.display = "block";
+      document.getElementById('adminPurchaseEdit').style.display = "block";
+    } else {
+      adminNavBtn.style.display = "inline-block";
+      adminPanelBtn.style.display = "none";
+      logoutBtn.style.display = "none";
+      adminPanel.classList.remove('open');
+      document.getElementById('adminGoalEdit').style.display = "none";
+      document.getElementById('adminPurchaseEdit').style.display = "none";
+    }
+    renderProducts();
+    renderTiers();
+  }
+
+  adminNavBtn.addEventListener('click', ()=>{
+    document.getElementById('loginEmail').value = "";
+    document.getElementById('loginPassword').value = "";
+    document.getElementById('loginError').style.display = "none";
+    openModal('loginModal');
+  });
+
+  document.getElementById('loginSubmitBtn').addEventListener('click', ()=>{
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass = document.getElementById('loginPassword').value;
+    if(email === ADMIN_EMAIL && pass === ADMIN_PASSWORD){
+      isAdmin = true;
+      saveLS(LS_KEYS.session, true);
+      closeModal('loginModal');
+      refreshAdminUI();
+    } else {
+      document.getElementById('loginError').style.display = "block";
+    }
+  });
+
+  logoutBtn.addEventListener('click', ()=>{
+    isAdmin = false;
+    saveLS(LS_KEYS.session, false);
+    refreshAdminUI();
+  });
+
+  adminPanelBtn.addEventListener('click', ()=>{
+    adminPanel.classList.add('open');
+    adminPanel.scrollIntoView({ behavior:'smooth' });
+    renderCategoryManage();
+    renderProdCatSelect();
+    renderAdminProductGrid();
+  });
+  document.getElementById('closeAdminPanelBtn').addEventListener('click', ()=>{
+    adminPanel.classList.remove('open');
+  });
+
+  document.querySelectorAll('[data-admin-tab]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('[data-admin-tab]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.admin-block').forEach(b=>b.classList.remove('active'));
+      document.getElementById('admin-'+btn.getAttribute('data-admin-tab')).classList.add('active');
+    });
+  });
+
+  /* ===================== SERVER INFO COPY ===================== */
+  function copyToClipboard(text, msgEl){
+    navigator.clipboard.writeText(text).then(()=>{
+      msgEl.classList.add('show');
+      setTimeout(()=> msgEl.classList.remove('show'), 1500);
+    }).catch(()=>{
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try{ document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta);
+      msgEl.classList.add('show');
+      setTimeout(()=> msgEl.classList.remove('show'), 1500);
+    });
+  }
+  document.getElementById('ipChip').addEventListener('click', ()=>{
+    copyToClipboard('alpha-mc.net', document.getElementById('ipCopiedMsg'));
+  });
+  document.getElementById('portChip').addEventListener('click', ()=>{
+    copyToClipboard('19132', document.getElementById('portCopiedMsg'));
+  });
+
+  /* ===================== LIVE PLAYER STATS ===================== */
+  const SERVER_HOST = "alpha-mc.net";
+  const SERVER_PORT = 19132;
+  const onlineDot = document.getElementById('onlineDot');
+  const onlineCountValue = document.getElementById('onlineCountValue');
+
+  async function fetchPlayerCount(){
+    try{
+      const res = await fetch(`https://api.mcsrvstat.us/bedrock/3/${SERVER_HOST}:${SERVER_PORT}`, { cache: "no-store" });
+      if(!res.ok) throw new Error("bad response");
+      const data = await res.json();
+      const count = data && data.online && data.players && typeof data.players.online === "number"
+        ? data.players.online : null;
+      if(count === null){
+        onlineCountValue.textContent = "Offline";
+        onlineDot.classList.add('offline');
+      } else {
+        onlineCountValue.textContent = String(count);
+        onlineDot.classList.remove('offline');
+      }
+    }catch(e){
+      onlineCountValue.textContent = "0";
+      onlineDot.classList.add('offline');
+    }
+  }
+  fetchPlayerCount();
+  setInterval(fetchPlayerCount, 30000);
+
+  /* ===================== CATEGORIES & PRODUCTS RENDER ===================== */
+  function renderCategoryTabs(){
+    const wrap = document.getElementById('categoryTabs');
+    wrap.innerHTML = "";
+    if(!categories.includes(activeCategory)) activeCategory = categories[0] || "";
+    categories.forEach(cat=>{
+      const btn = document.createElement('button');
+      btn.className = 'tab-btn' + (cat === activeCategory ? ' active' : '');
+      btn.textContent = cat;
+      btn.addEventListener('click', ()=>{
+        activeCategory = cat;
+        renderCategoryTabs();
+        renderProducts();
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function productCardHTML(p, adminMode){
+    const featuresHTML = (p.features||[]).map(f=>`<li>${escapeHTML(f)}</li>`).join('');
+    return `
+      <div class="card">
+        ${adminMode ? `<div class="admin-edit-row">
+            <button class="icon-btn" data-edit-prod="${p.id}" title="Edit">✏️</button>
+            <button class="icon-btn" data-del-prod="${p.id}" title="Delete">🗑️</button>
+          </div>` : ''}
+        <h3>${escapeHTML(p.name)}</h3>
+        ${p.duration ? `<span class="duration">${escapeHTML(p.duration)}</span>` : ''}
+        <div class="price">${escapeHTML(p.price)}</div>
+        <ul>${featuresHTML}</ul>
+        <div class="card-actions">
+          ${!adminMode ? `<button class="btn btn-ghost btn-small" data-add-cart="${p.id}">Add to Cart</button>` : ''}
+          <a class="btn btn-primary btn-small" href="${DISCORD_URL}" target="_blank" rel="noopener">Buy Now</a>
+        </div>
+      </div>`;
+  }
+
+  function escapeHTML(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? "" : String(str);
+    return div.innerHTML;
+  }
+
+  function renderProducts(){
+    renderCategoryTabs();
+    const grid = document.getElementById('productGrid');
+    const list = products.filter(p=> p.category === activeCategory);
+    grid.innerHTML = list.length ? list.map(p=>productCardHTML(p,false)).join('') : `<p style="color:var(--ink-soft);">No products in this category yet.</p>`;
+    grid.querySelectorAll('[data-add-cart]').forEach(btn=>{
+      btn.addEventListener('click', ()=> addToCart(btn.getAttribute('data-add-cart')));
+    });
+    observeFadeUps();
+  }
+
+  /* ===================== ADMIN: CATEGORY MANAGEMENT ===================== */
+  function renderCategoryManage(){
+    const wrap = document.getElementById('catManageList');
+    wrap.innerHTML = categories.map(cat=>`
+      <div class="cat-chip">
+        <span>${escapeHTML(cat)}</span>
+        <button class="icon-btn" data-edit-cat="${escapeHTML(cat)}">✏️</button>
+        <button class="icon-btn" data-del-cat="${escapeHTML(cat)}">🗑️</button>
+      </div>
+    `).join('');
+    wrap.querySelectorAll('[data-edit-cat]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const oldName = btn.getAttribute('data-edit-cat');
+        document.getElementById('catEditInput').value = oldName;
+        document.getElementById('catEditInput').dataset.oldName = oldName;
+        openModal('catModal');
+      });
+    });
+    wrap.querySelectorAll('[data-del-cat]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const name = btn.getAttribute('data-del-cat');
+        if(!confirm(`Delete category "${name}" and all its products?`)) return;
+        categories = categories.filter(c=>c!==name);
+        products = products.filter(p=>p.category!==name);
+        saveLS(LS_KEYS.categories, categories);
+        saveLS(LS_KEYS.products, products);
+        renderCategoryManage();
+        renderProdCatSelect();
+        renderAdminProductGrid();
+        renderProducts();
+      });
+    });
+  }
+
+  document.getElementById('addCatBtn').addEventListener('click', ()=>{
+    const input = document.getElementById('newCatName');
+    const name = input.value.trim();
+    if(!name) return;
+    if(categories.includes(name)){ alert("Category already exists."); return; }
+    categories.push(name);
+    saveLS(LS_KEYS.categories, categories);
+    input.value = "";
+    renderCategoryManage();
+    renderProdCatSelect();
+    renderProducts();
+  });
+
+  document.getElementById('saveCatEditBtn').addEventListener('click', ()=>{
+    const input = document.getElementById('catEditInput');
+    const oldName = input.dataset.oldName;
+    const newName = input.value.trim();
+    if(!newName) return;
+    if(newName !== oldName && categories.includes(newName)){ alert("A category with that name already exists."); return; }
+    categories = categories.map(c=> c===oldName ? newName : c);
+    products = products.map(p=> p.category===oldName ? {...p, category:newName} : p);
+    if(activeCategory === oldName) activeCategory = newName;
+    saveLS(LS_KEYS.categories, categories);
+    saveLS(LS_KEYS.products, products);
+    closeModal('catModal');
+    renderCategoryManage();
+    renderProdCatSelect();
+    renderAdminProductGrid();
+    renderProducts();
+  });
+
+  /* ===================== ADMIN: PRODUCT MANAGEMENT ===================== */
+  function renderProdCatSelect(){
+    const sel = document.getElementById('prodCatSelect');
+    sel.innerHTML = categories.map(c=>`<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('');
+  }
+
+  function renderAdminProductGrid(){
+    const grid = document.getElementById('adminProductGrid');
+    const cat = document.getElementById('prodCatSelect').value || categories[0];
+    const list = products.filter(p=>p.category===cat);
+    grid.innerHTML = list.length ? list.map(p=>productCardHTML(p,true)).join('') : `<p style="color:var(--ink-soft);">No products in this category yet.</p>`;
+    grid.querySelectorAll('[data-edit-prod]').forEach(btn=>{
+      btn.addEventListener('click', ()=> openProductModal(btn.getAttribute('data-edit-prod')));
+    });
+    grid.querySelectorAll('[data-del-prod]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-del-prod');
+        if(!confirm("Delete this product?")) return;
+        products = products.filter(p=>p.id!==id);
+        saveLS(LS_KEYS.products, products);
+        renderAdminProductGrid();
+        renderProducts();
+      });
+    });
+  }
+  document.getElementById('prodCatSelect').addEventListener('change', renderAdminProductGrid);
+
+  function openProductModal(productId){
+    activeAdminEditProductId = productId || null;
+    const isEdit = !!productId;
+    document.getElementById('productModalTitle').textContent = isEdit ? "Edit Product" : "Add Product";
+    if(isEdit){
+      const p = products.find(x=>x.id===productId);
+      document.getElementById('prodName').value = p.name;
+      document.getElementById('prodPrice').value = p.price;
+      document.getElementById('prodDuration').value = p.duration || "";
+      document.getElementById('prodFeatures').value = (p.features||[]).join('\n');
+    } else {
+      document.getElementById('prodName').value = "";
+      document.getElementById('prodPrice').value = "";
+      document.getElementById('prodDuration').value = "";
+      document.getElementById('prodFeatures').value = "";
+    }
+    openModal('productModal');
+  }
+  document.getElementById('openAddProductBtn').addEventListener('click', ()=> openProductModal(null));
+
+  document.getElementById('saveProductBtn').addEventListener('click', ()=>{
+    const name = document.getElementById('prodName').value.trim();
+    const price = document.getElementById('prodPrice').value.trim();
+    const duration = document.getElementById('prodDuration').value;
+    const features = document.getElementById('prodFeatures').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    if(!name || !price){ alert("Name and price are required."); return; }
+    const cat = document.getElementById('prodCatSelect').value || categories[0];
+
+    if(activeAdminEditProductId){
+      products = products.map(p=> p.id===activeAdminEditProductId ? {...p, name, price, duration, features} : p);
+    } else {
+      products.push({ id: 'p'+Date.now(), category:cat, name, price, duration, features });
+    }
+    saveLS(LS_KEYS.products, products);
+    closeModal('productModal');
+    renderAdminProductGrid();
+    renderProducts();
+  });
+
+  /* ===================== TIERS ===================== */
+  function renderTiers(){
+    const board = document.getElementById('tierBoard');
+    board.innerHTML = TIER_LIST.map(tier=>{
+      const players = tiers[tier] || [];
+      const playerRows = players.map(name=>`
+        <div class="player-row">
+          <img src="https://minotar.net/avatar/${encodeURIComponent(name)}/32.png" alt="${escapeHTML(name)}" onerror="this.src='https://minotar.net/avatar/MHF_Steve/32.png'">
+          <span>${escapeHTML(name)}</span>
+          ${isAdmin ? `<button class="icon-btn" data-remove-player="${escapeHTML(tier)}|${escapeHTML(name)}">✕</button>` : ''}
+        </div>
+      `).join('');
+      return `
+        <div class="tier-card">
+          <h4>${tier}</h4>
+          <div class="tier-players">${playerRows || '<p style="text-align:center;color:var(--ink-soft);font-size:0.85rem;">No players yet</p>'}</div>
+          ${isAdmin ? `
+            <div class="tier-add-form">
+              <input type="text" placeholder="Player name" data-tier-input="${tier}">
+              <button class="btn btn-primary btn-small" data-tier-add="${tier}">+</button>
+            </div>` : ''}
+        </div>`;
+    }).join('');
+
+    if(isAdmin){
+      board.querySelectorAll('[data-tier-add]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const tier = btn.getAttribute('data-tier-add');
+          const input = board.querySelector(`[data-tier-input="${tier}"]`);
+          const name = input.value.trim();
+          if(!name) return;
+          tiers[tier] = tiers[tier] || [];
+          tiers[tier].push(name);
+          saveLS(LS_KEYS.tiers, tiers);
+          renderTiers();
+        });
+      });
+      board.querySelectorAll('[data-remove-player]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const [tier, name] = btn.getAttribute('data-remove-player').split('|');
+          tiers[tier] = (tiers[tier]||[]).filter(n=>n!==name);
+          saveLS(LS_KEYS.tiers, tiers);
+          renderTiers();
+        });
+      });
+    }
+    observeFadeUps();
+  }
+
+  /* ===================== GOAL & PURCHASES ===================== */
+  function renderGoal(){
+    const bar = document.getElementById('goalProgressBar');
+    const pct = Math.max(0, Math.min(100, Number(goal) || 0));
+    requestAnimationFrame(()=>{
+      bar.style.width = pct + "%";
+      bar.textContent = pct + "%";
+    });
+    document.getElementById('goalInput').value = pct;
+  }
+  document.getElementById('saveGoalBtn').addEventListener('click', ()=>{
+    const val = Math.max(0, Math.min(100, Number(document.getElementById('goalInput').value) || 0));
+    goal = val;
+    saveLS(LS_KEYS.goal, goal);
+    renderGoal();
+  });
+
+  function renderPurchases(){
+    const wrap = document.getElementById('purchasesList');
+    wrap.innerHTML = purchases.length ? purchases.map((p,i)=>`
+      <div class="purchase-item">
+        <span>🛍️ ${escapeHTML(p)}</span>
+        ${isAdmin ? `<button class="icon-btn" data-del-purchase="${i}">🗑️</button>` : ''}
+      </div>
+    `).join('') : `<p style="color:var(--ink-soft);">No recent purchases.</p>`;
+    wrap.querySelectorAll('[data-del-purchase]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const idx = Number(btn.getAttribute('data-del-purchase'));
+        purchases.splice(idx,1);
+        saveLS(LS_KEYS.purchases, purchases);
+        renderPurchases();
+      });
+    });
+  }
+  document.getElementById('addPurchaseBtn').addEventListener('click', ()=>{
+    const input = document.getElementById('purchaseInput');
+    const val = input.value.trim();
+    if(!val) return;
+    purchases.unshift(val);
+    saveLS(LS_KEYS.purchases, purchases);
+    input.value = "";
+    renderPurchases();
+  });
+
+  /* ===================== CART ===================== */
+  function addToCart(productId){
+    const p = products.find(x=>x.id===productId);
+    if(!p) return;
+    cart.push({ id: p.id, name: p.name, price: p.price });
+    saveLS(LS_KEYS.cart, cart);
+    renderCartCount();
+  }
+  function renderCartCount(){
+    document.getElementById('cartCount').textContent = cart.length;
+  }
+  function parsePrice(priceStr){
+    const num = parseFloat(String(priceStr).replace(/[^0-9.]/g,''));
+    return isNaN(num) ? 0 : num;
+  }
+  function renderCart(){
+    const wrap = document.getElementById('cartItems');
+    if(!cart.length){
+      wrap.innerHTML = `<p style="color:var(--ink-soft);">Your cart is empty.</p>`;
+    } else {
+      wrap.innerHTML = cart.map((item,i)=>`
+        <div class="purchase-item">
+          <span>${escapeHTML(item.name)} — ${escapeHTML(item.price)}</span>
+          <button class="icon-btn" data-remove-cart="${i}">🗑️</button>
+        </div>
+      `).join('');
+      wrap.querySelectorAll('[data-remove-cart]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const idx = Number(btn.getAttribute('data-remove-cart'));
+          cart.splice(idx,1);
+          saveLS(LS_KEYS.cart, cart);
+          renderCart();
+          renderCartCount();
+        });
+      });
+    }
+    const total = cart.reduce((sum,item)=> sum + parsePrice(item.price), 0);
+    document.getElementById('cartTotal').textContent = "$" + total.toFixed(2);
+  }
+  document.getElementById('cartBtn').addEventListener('click', ()=>{
+    renderCart();
+    openModal('cartModal');
+  });
+  document.getElementById('checkoutBtn').addEventListener('click', ()=>{
+    window.open(DISCORD_URL, '_blank', 'noopener');
+  });
+
+  /* ===================== INIT ===================== */
+  document.getElementById('year').textContent = new Date().getFullYear();
+  saveLS(LS_KEYS.categories, categories);
+  saveLS(LS_KEYS.products, products);
+  saveLS(LS_KEYS.tiers, tiers);
+  saveLS(LS_KEYS.goal, goal);
+  saveLS(LS_KEYS.purchases, purchases);
+  saveLS(LS_KEYS.cart, cart);
+
+  refreshAdminUI();
+  renderProducts();
+  renderTiers();
+  renderGoal();
+  renderPurchases();
+  renderCartCount();
+  observeFadeUps();
+
+})();
+</script>
+</body>
+</html>
